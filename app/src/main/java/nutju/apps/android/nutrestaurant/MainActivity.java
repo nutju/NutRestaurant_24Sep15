@@ -1,10 +1,15 @@
 package nutju.apps.android.nutrestaurant;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -23,11 +28,16 @@ public class MainActivity extends AppCompatActivity {
     // Explicit
     private UserTABLE objUserTABLE;
     private FoodTABLE objFoodTABLE;
+    private EditText edtUser, edtPassword;
+    private String strUser, strPassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Bind Widget
+        bindWidget();
 
         // Create & Connect SQLite
         createAndConnect();
@@ -42,6 +52,61 @@ public class MainActivity extends AppCompatActivity {
         syncJSONtoSQLite();
 
     }   // onCreate
+
+    public void clickLogin(View view) {
+        strUser = edtUser.getText().toString().trim();
+        strPassword = edtPassword.getText().toString().trim();
+
+        if (strUser.equals("") || strPassword.equals("")) {
+            // empty user or password
+            myAlertDialog("มีช่องว่าง", "กรุณากรอกทุกช่องนะครับ");
+
+        } else {
+            // user and password not empty
+            checkUser();
+
+        }
+    }   // Click Log in
+
+    private void checkUser() {
+        try {
+            String[] strMyResult = objUserTABLE.searchUser(strUser);
+
+            if (strPassword.equals(strMyResult[2])) {
+                welcome(strMyResult[3]);
+
+            } else {
+                myAlertDialog("เกิดข้อผิดพลาด", "รหัสผ่านไม่ถูกต้อง, กรุณาลองใหม่อีกครั้ง");
+            }
+
+        } catch (Exception e) {
+            myAlertDialog("เกิดข้อผิดพลาด", "ไม่พบ User: " + strUser + " ในระบบ");
+        }
+    }   // check user
+
+    private void welcome(String strName) {
+        
+    }   // welcome
+
+    private void myAlertDialog(String strTitle, String strMessage) {
+        AlertDialog.Builder objBuilder = new AlertDialog.Builder(this);
+        objBuilder.setIcon(R.drawable.danger);
+        objBuilder.setTitle(strTitle);
+        objBuilder.setMessage(strMessage);
+        objBuilder.setCancelable(false);
+        objBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        objBuilder.show();
+    }
+
+    private void bindWidget() {
+        edtUser = (EditText) findViewById(R.id.edtUser);
+        edtPassword = (EditText) findViewById(R.id.edtPassword);
+    }
 
     private void syncJSONtoSQLite() {
 
@@ -72,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 objInputStream = objHttpEntity.getContent();
 
             } catch (Exception e) {
-                Log.d("Restaurant", "InputStream ==> " + e.toString());
+                Log.d("Restaurant", "InputStream : " + e.toString());
             }
 
             // 2. Create strJSON
@@ -88,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 strJSON = objStringBuilder.toString();
 
             } catch (Exception e) {
-                Log.d("Restaurant", "strJSON ==> " + e.toString());
+                Log.d("Restaurant", "strJSON : " + e.toString());
             }
 
             // 3. Update SQLite
@@ -116,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                 }   // for
 
             } catch (Exception e) {
-                Log.d("Restaurant", "SQLite ==> " + e.toString());
+                Log.d("Restaurant", "SQLite : " + e.toString());
             }
 
             intTimes += 1;
